@@ -1,0 +1,31 @@
+{
+  "name": "neon-serpent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Neon Serpent — a modern, cross-platform snake game (Android, iOS, web/PWA).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "sync": "npm run build && cap sync",
+    "android:apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "android:run": "npm run sync && cap run android",
+    "ios:open": "npm run sync && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.3"
+  }
+}

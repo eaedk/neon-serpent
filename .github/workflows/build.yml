@@ -1,0 +1,90 @@
+# Builds Neon Serpent for every platform on GitHub's hosted runners.
+#
+#  - web:     tests + production bundle, deployed to GitHub Pages (installable PWA)
+#  - android: debug APK you can install directly on any Android phone
+#  - ios:     simulator .app (zip) + unsigned .ipa for sideloading / re-signing
+#
+# Artifacts appear on the workflow run page ("Artifacts" section).
+name: Build apps
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+
+  pages:
+    needs: web
+    runs-on: ubuntu-latest
+    # Enable once: repo Settings → Pages → Source: "GitHub Actions".
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - run: mv android/app/build/outputs/apk/debug/app-debug.apk neon-serpent.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: neon-serpent-android, path: neon-serpent.apk }
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync ios
+      - name: Build for the iOS Simulator
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build
+          (cd build/sim/Build/Products/Release-iphonesimulator && zip -qr "$GITHUB_WORKSPACE/NeonSerpent-simulator.zip" App.app)
+      - name: Build unsigned device IPA
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          mkdir -p Payload && cp -R build/device/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr NeonSerpent-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neon-serpent-ios
+          path: |
+            NeonSerpent-simulator.zip
+            NeonSerpent-unsigned.ipa

@@ -1,0 +1,16 @@
+{
+  "name": "Neon Serpent",
+  "short_name": "Serpent",
+  "description": "A modern snake game with campaign, daily challenges, power-ups and skins.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#07060f",
+  "theme_color": "#07060f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
